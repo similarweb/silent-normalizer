@@ -53,11 +53,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.classification.InterfaceAudience;
 import org.apache.hadoop.hbase.master.MasterServices;
+import org.apache.hadoop.hbase.master.RegionState;
 import org.apache.hadoop.hbase.master.normalizer.MergeNormalizationPlan;
 import org.apache.hadoop.hbase.master.normalizer.NormalizationPlan;
 import org.apache.hadoop.hbase.master.normalizer.RegionNormalizer;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Simple implementation of region normalizer.
@@ -136,11 +138,18 @@ public class SilentRegionNormalizer implements RegionNormalizer {
     List<HRegionInfo> tableRegions = masterServices.getAssignmentManager().getRegionStates().
             getRegionsOfTable(table);
 
-
     LOG.info("Computing normalization plan for table: " + table +
             ", number of regions: " + tableRegions.size());
 
-    List<NormalizationPlan> plans =
+    if(LOG.isDebugEnabled()) {
+      masterServices.getAssignmentManager().getRegionStates().getRegionByStateOfTable(table)
+              .forEach((state,list) -> {
+                LOG.debug("Regions in state "+state.name()+" : "+list.size());
+                list.forEach(LOG::trace);
+              });
+    }
+
+   List<NormalizationPlan> plans =
             tableRegions.stream()
                     .map(this::toRegionInfo)
                     .collect(RegionPairsCollection.createCollector(mergeConfig))
